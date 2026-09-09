@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional
 
 from pydantic import BaseModel, Field
@@ -7,6 +7,26 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.sql import func
 
 Base = declarative_base()
+
+
+def utcnow_naive() -> datetime:
+    """The one way this schema writes a timestamp from Python.
+
+    Every DateTime column here is naive, and every column-level default is
+    `func.now()` — the *database's* clock, which is UTC. Anything Python writes
+    into the same columns has to agree with that, or timestamps from the two
+    sources cannot be compared. `datetime.now()` does not agree: it is local,
+    so on any non-UTC host it silently shifts rows by the offset.
+
+    That is not hypothetical here. `RewardCalculator` decides whether a
+    honeytoken was touched after a bandit decision by comparing a Python-written
+    `accessed_at` against a database-written `selected_at`, and the skew goes
+    whichever way the host's offset does: east of Greenwich the Python-written
+    side reads ahead, so stale accesses look like fresh ones and the bandit is
+    handed rewards it did not earn; west of it, real hits are missed. This
+    machine is UTC+5:30, so it had the first failure mode.
+    """
+    return datetime.now(timezone.utc).replace(tzinfo=None)
 
 
 # SQLAlchemy Models
@@ -80,7 +100,7 @@ class HoneytokenAccessLog(BaseModel):
     """Log when honeytoken is accessed."""
 
     token_id: str
-    accessed_at: datetime = Field(default_factory=datetime.now)
+    accessed_at: datetime = Field(default_factory=utcnow_naive)
     access_source: Optional[str] = None
     access_metadata: dict = Field(default_factory=dict)
 

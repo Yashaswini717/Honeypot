@@ -92,13 +92,14 @@ class RewardCalculator:
         for token in tokens:
             if token.accessed_at is None:
                 continue
-            # NOTE: accessed_at is written with local naive time in
-            # HoneytokenStore.check_honeytoken while `since` (a decision's
-            # selected_at) comes from the DB's func.now(); on a machine
-            # whose local timezone isn't UTC this comparison can be off by
-            # the UTC offset. Acceptable for the current scale/scope of
-            # this project; worth tightening if the honeypot ever moves to
-            # a non-UTC deployment host.
+            # Both sides of this comparison are naive UTC: `since` is a
+            # decision's selected_at, defaulted from the database's func.now(),
+            # and accessed_at is written through storage.models.utcnow_naive().
+            # They used to disagree — accessed_at was local time — which skewed
+            # this test by the host's UTC offset in whichever direction that
+            # offset ran: ahead of UTC it returned True for accesses that
+            # predated the decision, paying full reward for decoys nobody
+            # touched. Keep any new writer on utcnow_naive() too.
             if since is None or token.accessed_at >= since:
                 return True
         return False

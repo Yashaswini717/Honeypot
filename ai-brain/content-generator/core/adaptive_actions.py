@@ -1,8 +1,8 @@
 """Candidate decoy actions the adaptive engine can choose between per intent.
 
-The old `core.decision_engine.INTENT_TO_ACTION` map picked exactly one
-action per intent — there was nothing to *choose* between, so nothing could
-be learned. Here each intent gets several candidate strategies; the
+The `INTENT_TO_ACTION` map this replaced picked exactly one action per intent —
+there was nothing to *choose* between, so nothing could be learned. Here each
+intent gets several candidate strategies; the
 `AdaptiveDecisionEngine` (see `core/adaptive_engine.py`) learns, per intent,
 which candidate tends to keep an attacker engaged (or trips a honeytoken)
 most often, via Thompson Sampling.
@@ -21,8 +21,8 @@ from core.intent_taxonomy import INTENT_CLASSES
 
 
 # Candidate decoy strategies per intent. The first entry in each list is the
-# team's original Phase-3 default (see the legacy `decision_engine.py`); the
-# rest are alternative strategies the bandit is free to discover are better.
+# team's original Phase-3 default, carried over from the static map this
+# replaced; the rest are alternatives the bandit is free to discover are better.
 ACTION_CATALOG: Final[dict[str, list[str]]] = {
     "reconnaissance": [
         "show_fake_endpoints",

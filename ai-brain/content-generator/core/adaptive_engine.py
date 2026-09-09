@@ -1,9 +1,10 @@
-"""Adaptive (learning) replacement for `core.decision_engine.DecisionEngine`.
+"""The learning decision engine.
 
-The original `DecisionEngine.suggest_action()` was a static lookup:
-`INTENT_TO_ACTION[intent]`. Same intent, same action, forever — nothing
-about it changes based on how attackers actually respond, so despite the
-name it never adapts.
+This replaced a static `DecisionEngine` whose `suggest_action()` was a plain
+lookup, `INTENT_TO_ACTION[intent]`: same intent, same action, forever — nothing
+about it changed based on how attackers actually responded, so despite the name
+it never adapted. That module has been deleted rather than left beside this one;
+two engines with near-identical names, only one of them wired up, is a trap.
 
 `AdaptiveDecisionEngine` keeps a Thompson-Sampling contextual bandit per
 intent (state) over several candidate decoy actions (see
@@ -28,7 +29,7 @@ from storage.models import AdaptiveArmStats
 
 @dataclass
 class AdaptiveActionSuggestion:
-    """Drop-in replacement for `core.decision_engine.ActionSuggestion` with extra observability fields."""
+    """What the bandit chose, plus the posterior state that explains the choice."""
 
     intent: str
     action: str

@@ -1,4 +1,3 @@
-from datetime import datetime
 from pathlib import Path
 from typing import Optional
 
@@ -11,7 +10,7 @@ from config.settings import settings
 from core.exceptions import DatabaseError
 from core.utils import generate_unique_id
 
-from .models import Base, HoneytokenCreate, HoneytokenDB, HoneytokenResponse
+from .models import Base, HoneytokenCreate, HoneytokenDB, HoneytokenResponse, utcnow_naive
 
 
 class HoneytokenStore(LoggerMixin):
@@ -125,8 +124,17 @@ class HoneytokenStore(LoggerMixin):
                 result = session.execute(stmt).scalar_one_or_none()
                 
                 if result:
-                    # Log access
-                    result.accessed_at = datetime.now()
+                    # Log access.
+                    #
+                    # This was datetime.now() — local time — while every other
+                    # timestamp in this schema comes from the database's own
+                    # func.now(), which is UTC. RewardCalculator compares this
+                    # field against a decision's selected_at, so on a non-UTC
+                    # host the strongest signal the bandit has was mis-ordered
+                    # by the size of the offset: ahead of UTC (as here, +5:30)
+                    # an access from hours ago still satisfies the comparison
+                    # and pays reward 1.0 to an arm that earned nothing.
+                    result.accessed_at = utcnow_naive()
                     result.access_count += 1
                     session.commit()
                     

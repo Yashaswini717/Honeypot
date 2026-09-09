@@ -41,13 +41,17 @@ async def process_event(raw: dict):
     normalized = normalize(raw)
     event = normalized.model_dump()
 
-    # convert datetime to ISO string for ES + Redis
-    event["timestamp"] = normalized.timestamp.isoformat()
-
     # 2. Enrich
     event = enrich_geoip(event)
     event = enrich_mitre(event)
     event = compute_threat_score(event)
+
+    # Serialise the timestamp only once scoring has run. This used to happen
+    # immediately after model_dump(), which left compute_threat_score comparing
+    # a str where it expected a datetime — so its off-hours branch was
+    # unreachable and the boost silently never applied. Elasticsearch and Redis
+    # are the only consumers that need a string, and both come after here.
+    event["timestamp"] = normalized.timestamp.isoformat()
 
     # 3. Store in Elasticsearch
     await index_event(event)

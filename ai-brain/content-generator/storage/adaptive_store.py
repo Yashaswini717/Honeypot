@@ -14,7 +14,6 @@ Two tables:
 from __future__ import annotations
 
 import random
-from datetime import datetime
 from pathlib import Path
 from typing import Optional
 
@@ -33,6 +32,7 @@ from .models import (
     AdaptiveDecisionDB,
     AdaptiveDecisionResponse,
     Base,
+    utcnow_naive,
 )
 
 
@@ -139,7 +139,7 @@ class AdaptiveLearningStore(LoggerMixin):
                 assert best_action is not None and best_arm is not None  # candidate_actions non-empty
 
                 best_arm.times_selected += 1
-                best_arm.updated_at = datetime.utcnow()
+                best_arm.updated_at = utcnow_naive()
 
                 decision_id: Optional[str] = None
                 if session_id:
@@ -227,7 +227,7 @@ class AdaptiveLearningStore(LoggerMixin):
                     return None
 
                 decision.resolved = True
-                decision.resolved_at = datetime.utcnow()
+                decision.resolved_at = utcnow_naive()
                 decision.reward = clamped_reward
                 decision.resolution_reason = reason
 
@@ -235,7 +235,7 @@ class AdaptiveLearningStore(LoggerMixin):
                 arm.alpha += clamped_reward
                 arm.beta += 1.0 - clamped_reward
                 arm.total_reward += clamped_reward
-                arm.updated_at = datetime.utcnow()
+                arm.updated_at = utcnow_naive()
 
                 session.commit()
                 session.refresh(arm)
